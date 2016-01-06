@@ -1,0 +1,3 @@
+file.remove("init.lua")
+require('network')
+network.setupTelnetServer()
