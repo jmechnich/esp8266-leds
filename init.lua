@@ -1,1 +1,1 @@
-dofile("init_real.lc")
+dofile("init_network.lc")
