@@ -72,14 +72,14 @@ touch $TS
 echo "Restarting"
 $LUATOOL -n
 
-screen $DEV $BAUD
-if [ $? -eq 0 ]; then
+if [ -r $DEV ]; then
+    screen $DEV $BAUD
     exit 0
 fi
 
 for i in seq 5; do
     if nc -z $IP 23; then
         telnet $IP
-        break
+        exit 0
     fi
 done
