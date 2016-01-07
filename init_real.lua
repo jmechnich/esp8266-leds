@@ -8,10 +8,7 @@ function dump (t)
    end
 end
 
-loadfile('local')
-
 require('mpd')
-
 require('remote')
 function mkclickfun (name, cmd)
    return function () print(name); remote.blink() end
