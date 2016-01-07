@@ -1,4 +1,4 @@
-dofile('util.lc')
+require('util')
 require('network')
 network.init()
 network.waitconnect(nil,
