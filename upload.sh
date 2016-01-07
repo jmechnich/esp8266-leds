@@ -51,18 +51,16 @@ fi
 LUATOOL="luatool.py -p $DEV -b $BAUD $OPT"
 
 TS=.timestamp
-#[ ! -e $TS ] && touch $TS
 
-upload_script init_real.lua -c
-upload_script mpd.lua -c
-upload_script remote.lua -c
-upload_script network.lua -c
-if [ -r local.lua ]; then
-    if ! (check_timestamp local.lua && check_timestamp init.lua); then
-        echo "Creating localized init.lua"
-        cat local.lua init.lua > .init.tmp
-        upload_script .init.tmp -t init.lua
+for s in *.lua; do
+    if [ "$s" = local.lua ] || [ "$s" = init.lua ]; then
+        continue
     fi
+    upload_script $s -c
+done
+
+if [ -r local.lua ]; then
+    upload_script local.lua -t init.lua
 else
     upload_script init.lua
 fi
@@ -77,9 +75,13 @@ if [ -r $DEV ]; then
     exit 0
 fi
 
+echo "Checking telnet server at $IP"
 for i in seq 5; do
     if nc -z $IP 23; then
         telnet $IP
         exit 0
+    else
+        echo "Sleeping 3 seconds..."
+        sleep 3
     fi
 done
