@@ -6,6 +6,15 @@ DEV=/dev/ttyUSB0
 
 [ -e ./local.sh ] && . ./local.sh
 
+check_timestamp ()
+{
+    if [ ! -e $TS ] || [ "$1" -nt $TS ]; then
+        true
+    else
+        false
+    fi
+}
+
 upload_script ()
 {
     SCRIPT="$1"
@@ -15,7 +24,7 @@ upload_script ()
         return
     fi
     
-    if [ ! -e $TS ] || [ "$SCRIPT" -nt $TS ]; then
+    if check_timestamp "$SCRIPT"; then
         echo "Running '$LUATOOL -f $SCRIPT $@'"
         $LUATOOL -f "$SCRIPT" $@
         [ $? -ne 0 ] && exit 1
@@ -48,7 +57,15 @@ upload_script init_real.lua -c
 upload_script mpd.lua -c
 upload_script remote.lua -c
 upload_script network.lua -c
-upload_script init.lua
+if [ -r local.lua ]; then
+    if ! (check_timestamp local.lua && check_timestamp init.lua); then
+        echo "Creating localized init.lua"
+        cat local.lua init.lua > .init.tmp
+        upload_script .init.tmp -t init.lua
+    fi
+else
+    upload_script init.lua
+fi
 
 touch $TS
 
