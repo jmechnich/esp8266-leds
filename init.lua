@@ -44,7 +44,7 @@ remote.init_buttons()
 
 require('network')
 network.init()
-network.connect(
+network.waitconnect(
    function () remote.blink(1) end,
    function ()
       remote.blink(2)
