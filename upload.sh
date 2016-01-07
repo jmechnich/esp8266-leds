@@ -24,7 +24,7 @@ upload_script ()
 
 OPT=""
 if [ ! -z "$IP" ] && ping -q -c1 -W3 "$IP" > /dev/null; then
-    MAC=`arp -n | grep "$IP" | awk '{ print $3 }'`
+    MAC=`arp -n -a | grep "$IP" | awk '{ print $4 }'`
     if echo "$MAC" | grep -q '^ac:d0:74\|^5c:cf:7f\|^18:fe:34'; then
         echo "Found ESP8266 with MAC address $MAC at $IP"
         if nc -z $IP 23; then
@@ -44,7 +44,7 @@ LUATOOL="luatool.py -p $DEV -b $BAUD $OPT"
 TS=.timestamp
 #[ ! -e $TS ] && touch $TS
 
-upload_script local.lua -c
+upload_script init_real.lua -c
 upload_script mpd.lua -c
 upload_script remote.lua -c
 upload_script network.lua -c
