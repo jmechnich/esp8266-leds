@@ -1,4 +1,3 @@
-require('util')
 require('mpd')
 require('remote')
 
