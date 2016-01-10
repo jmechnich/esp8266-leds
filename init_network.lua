@@ -5,5 +5,4 @@ network.waitconnect(nil,
       network.info()
       network.setupTelnetServer()
       print("Started telnet server")
-   end
-)
+end)

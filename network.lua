@@ -8,6 +8,9 @@ P.pass = nil
 function P.init(ssid,pass)
    wifi.setmode(wifi.STATION)
    if ssid == nil then
+      if wifi.sta.getip() ~= nil then
+         return
+      end
       return P.auto()
    end
    P.ssid = ssid
