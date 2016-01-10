@@ -7,6 +7,7 @@ P.pass = nil
 
 function P.init(ssid,pass)
    wifi.setmode(wifi.STATION)
+   wifi.sleeptype(wifi.NONE_SLEEP)
    if ssid == nil then
       if wifi.sta.getip() ~= nil then
          return
