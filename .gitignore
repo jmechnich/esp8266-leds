@@ -1,5 +1,4 @@
 *~
 /.timestamp
-/local.lua
-/local.sh
+/local.*
 /.init.tmp
