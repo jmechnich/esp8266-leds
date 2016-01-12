@@ -2,6 +2,7 @@ local P = {}
 remote = P
 P.__index = P
 
+local pin_rstsw = 4
 local pin_led = 8
 P.buttons = {}
 P.sleepdelay = 5
@@ -19,12 +20,19 @@ function P.blink(count,dt)
 end
 
 function P.restartSleepTimer()
+   if P.sleepdelay == nil then return end
    tmr.stop(2)
    tmr.alarm(2,P.sleepdelay*1000,0,function ()
                 print("Sleeping")
                 P.blink(2)
                 node.dsleep(0)
    end)
+end
+
+function P.init_resetsw(pin)
+   if pin ~= nil then pin_rstsw = pin end
+   gpio.mode(pin_rstsw,gpio.OUTPUT)
+   gpio.write(pin_rstsw,gpio.LOW)
 end
 
 function P.init_led(pin)

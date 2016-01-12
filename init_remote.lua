@@ -2,10 +2,10 @@ require('mpd')
 require('remote')
 
 local function mkclickfun (name, cmd)
-   return function () print(name); remote.blink() end
+   return function () print(name); cmd(); remote.blink() end
 end
 local function mklongfun (name, cmd)
-   return function () print(name); remote.blink(2) end
+   return function () print(name); cmd(); remote.blink(2) end
 end
 
 remote.buttons = {
@@ -26,7 +26,8 @@ remote.buttons = {
       mklongfun("btn4_long", function() end),
    },
 }
-remote.init_led(8)
+remote.init_resetsw()
+remote.init_led()
 remote.init_buttons()
 
 require('network')
@@ -38,6 +39,6 @@ network.waitconnect(
       network.info()
       network.setupTelnetServer()
       print("Started telnet server")
-      --remote.restartSleepTimer()
+      remote.restartSleepTimer()
    end
 )
