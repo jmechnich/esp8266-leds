@@ -1,10 +1,12 @@
-require('mqttclient')
 require('network')
+require('telnet')
+require('mqttclient')
+
 network.init()
 network.waitconnect(nil,
    function ()
       network.info()
-      network.setupTelnetServer()
+      telnet.setupTelnetServer()
       print("Started telnet server")
       mqttclient.start()
 end)

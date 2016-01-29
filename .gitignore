@@ -1,4 +1,4 @@
 *~
 /.timestamp
-/local.*
-/.init.tmp
+/.espuploadrc
+/local.lua

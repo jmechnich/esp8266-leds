@@ -1,8 +1,9 @@
 require('network')
+require('telnet')
 network.init()
 network.waitconnect(nil,
    function ()
       network.info()
-      network.setupTelnetServer()
+      telnet.setupTelnetServer()
       print("Started telnet server")
 end)
