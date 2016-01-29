@@ -1,33 +1,31 @@
 local P =  {}
 network = P
 
-P.networks = {}
+P.networks = nil
 P.ssid = nil
 P.pass = nil
 
-function P.init(ssid,pass)
+function P.init(force)
+   if wifi.sta.status() == 1 and not force then
+      return
+   end
    wifi.setmode(wifi.STATION)
    wifi.sleeptype(wifi.NONE_SLEEP)
-   if ssid == nil then
-      if wifi.sta.getip() ~= nil then
-         return
-      end
-      return P.auto()
-   end
-   P.ssid = ssid
-   if pass ~= nil then
-      P.pass = pass
-      print("Manually selected network "..P.ssid)
-      return P.connect()
-   end
-
-   for k,v in pairs(P.networks) do
-      if k == P.ssid then
-         P.pass = v
-         print("Selected "..P.ssid.." from known networks")
+   if P.ssid ~= nil then
+      if P.pass ~= nil then
+         print("Manually selected network "..P.ssid)
          return P.connect()
+      elseif P.networks ~= nil then
+         for k,v in pairs(P.networks) do
+            if k == P.ssid then
+               P.pass = v
+               print("Selected "..P.ssid.." from known networks")
+               return P.connect()
+            end
+         end
       end
    end
+   return P.auto()
 end
 
 function P.auto()
@@ -45,7 +43,9 @@ function P.auto()
    end)
 end
 
-function P.connect()
+function P.connect(ssid,pass)
+   if ssid ~= nil then P.ssid = ssid end
+   if pass ~= nil then P.pass = pass end
    if P.ssid == nil or P.pass == nil then
       print("SSID and/or password not set")
       return
