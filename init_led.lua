@@ -4,7 +4,7 @@ led.show()
 local offset = 0
 
 local function cycle_off (t)
-   return tmr.alarm(4,t,0, function ()
+   return tmr.alarm(4,t,tmr.ALARM_SINGLE, function ()
                        led.show_off(offset)
                        offset = (offset+1)%led.nled
                        return cycle_off(t)
@@ -12,7 +12,7 @@ local function cycle_off (t)
 end
 
 local function cycle (t)
-   return tmr.alarm(4,t,0, function ()
+   return tmr.alarm(4,t,tmr.ALARM_SINGLE, function ()
                        led.setRainbow(offset)
                        led.show()
                        offset = (offset+1)%led.nled
@@ -35,5 +35,5 @@ function rbow_stop()
    tmr.stop(4)
    led.off()
    offset = 0
-   return tmr.alarm(4,1000,0, collectgarbage)
+   return tmr.alarm(4,1000,tmr.ALARM_SINGLE, collectgarbage)
 end

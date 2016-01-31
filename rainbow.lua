@@ -33,7 +33,7 @@ end
 
 local i = 0
 function P.cycle()
-   tmr.alarm(4,10,0, function ()
+   tmr.alarm(4,10,tmr.ALARM_SINGLE,function ()
                 P.show(i)
                 i = (i+1)%P.nled
                 P.cycle()
@@ -41,10 +41,9 @@ function P.cycle()
 end
 
 function P.stop()
-   tmr.stop(4)
    ws2812.writergb( P.pin, string.char(0):rep(P.nled*3))
    i=0
-   tmr.alarm(4,1000,0, collectgarbage)
+   tmr.alarm(4,1000,tmr.ALARM_SINGLE,collectgarbage)
 end
 
 return rainbow

@@ -21,4 +21,4 @@ require('rainbow')
 rainbow.stop()
 rainbow.nled = 120
 rainbow.pin = 1
-tmr.alarm(4,10000, 0, rainbow.cycle)
+tmr.alarm(4,10000,tmr.ALARM_SINGLE,rainbow.cycle)
