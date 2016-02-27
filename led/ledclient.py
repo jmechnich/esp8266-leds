@@ -3,10 +3,10 @@
 import subprocess, sys, time, math, colorsys
 
 class Rainbow(object):
-    def __init__(self,nleds,max,stepsize=math.pi/256.):
+    def __init__(self,nleds,max,stepsize=math.pi/256.,hue=0):
         self.max      = max
         self.nleds    = nleds
-        self.hsv      = [0,1,1]
+        self.hsv      = [hue,1,1]
         self.stepsize = stepsize
     
     def iterateLin(self):
@@ -30,7 +30,7 @@ class Rainbow(object):
 
 class LEDClient(object):
     def __init__(self,nled,host,port=1883,pin=1,max=0xf,stepsize=math.pi/1024.,
-                 verbose=False):
+                 verbose=False,hue=0):
         self.nled      = nled
         self.mqtt_host = host
         self.mqtt_port = port
@@ -38,7 +38,9 @@ class LEDClient(object):
         self.max       = max
         self.stepsize  = stepsize
         self.verbose   = verbose
-        self.rb        = Rainbow(self.nled,self.max,self.stepsize)
+        self.hue       = hue
+        self.rb        = Rainbow(self.nled,self.max,stepsize=self.stepsize,
+                                 hue=self.hue)
 
     def iterate_rb_full(self):
         self.send_raw(bytearray(self.rb.iterate()))
@@ -83,6 +85,8 @@ if __name__ == "__main__":
                         help="mptt host (default: %(default)s)")
     parser.add_argument("port", default=1883, type=int, nargs="?",
                         help="mptt port (default: %(default)s)")
+    parser.add_argument("-c", "--color", default=0, type=float,
+                        help="set start color (hue), range 0-1 (default: %(default)s)")
     parser.add_argument("-d", "--device", default="huzzah", type=str,
                         help="device name (default: %(default)s)")
     parser.add_argument("-m", "--max", default=50, type=int,
@@ -91,20 +95,23 @@ if __name__ == "__main__":
                         help="set number of leds (default: %(default)s)")
     parser.add_argument("-o", "--off", action="store_true",
                         help="set leds off and exit")
-    parser.add_argument("-p", "--pin", default=120, type=int,
+    parser.add_argument("-p", "--pin", default=1, type=int,
                         help="set led pin number (default: %(default)s)")
-    parser.add_argument("-s", "--stepsize", default=math.pi/1024., type=int,
+    parser.add_argument("-s", "--stepsize", default=math.pi/1024., type=float,
                         help="rainbow color stepsize (default: math.pi/1024)")
+    parser.add_argument("-t", "--time", default=1., type=float,
+                        help="time between changes (default: %(default)s)")
     parser.add_argument("-v", "--verbose", help="verbose output",
                         action="store_true")
     args = parser.parse_args()
-    l = LEDClient(host=args.host,port=args.port,
-                  nled=args.nled,pin=args.pin,max=args.max,
-                  stepsize=args.stepsize, verbose=args.verbose)
-    l.off()
+    l = LEDClient(host=args.host,port=args.port,nled=args.nled,pin=args.pin,
+                  max=args.max,stepsize=args.stepsize,verbose=args.verbose,
+                  hue=max(0,min(1,args.color)))
     try:
         while not args.off:
             l.iterate_rb_mirror()
-            time.sleep(1)
+            time.sleep(args.time)
     except KeyboardInterrupt:
         pass
+    print
+
