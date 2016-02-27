@@ -106,7 +106,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     l = LEDClient(host=args.host,port=args.port,nled=args.nled,pin=args.pin,
                   max=args.max,stepsize=args.stepsize,verbose=args.verbose,
-                  hue=max(0,min(1,args.color)))
+                  hue=abs(args.color-int(args.color)))
     try:
         while not args.off:
             l.iterate_rb_mirror()
