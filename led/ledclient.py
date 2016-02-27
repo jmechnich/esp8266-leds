@@ -29,13 +29,15 @@ class Rainbow(object):
         return msg
 
 class LEDClient(object):
-    def __init__(self,nled,host,port=1883,pin=1,max=0xf,stepsize=math.pi/1024.):
+    def __init__(self,nled,host,port=1883,pin=1,max=0xf,stepsize=math.pi/1024.,
+                 verbose=False):
         self.nled      = nled
         self.mqtt_host = host
         self.mqtt_port = port
         self.pin       = pin
         self.max       = max
         self.stepsize  = stepsize
+        self.verbose   = verbose
         self.rb        = Rainbow(self.nled,self.max,self.stepsize)
 
     def iterate_rb_full(self):
@@ -58,6 +60,9 @@ class LEDClient(object):
         self.send_raw(bytearray(pix_half+pix_rev))
         
     def send_raw(self,data,topic="leddata",device="huzzah"):
+        if self.verbose:
+            print "Sending data to %s:%d, topic %s/in/%s, length %d" % \
+                (self.mqtt_host,self.mqtt_port,device,topic,len(data))
         cmdline = "mosquitto_pub -h %s -p %d -s -t %s/in/%s" % \
                   (self.mqtt_host,self.mqtt_port,device,topic)
         p = subprocess.Popen(cmdline.split(),stdin=subprocess.PIPE)
@@ -78,6 +83,8 @@ if __name__ == "__main__":
                         help="mptt host (default: %(default)s)")
     parser.add_argument("port", default=1883, type=int, nargs="?",
                         help="mptt port (default: %(default)s)")
+    parser.add_argument("-d", "--device", default="huzzah", type=str,
+                        help="device name (default: %(default)s)")
     parser.add_argument("-m", "--max", default=50, type=int,
                         help="maximum brightness (default: %(default)s)")
     parser.add_argument("-n", "--nled", default=120, type=int,
@@ -91,10 +98,9 @@ if __name__ == "__main__":
     parser.add_argument("-v", "--verbose", help="verbose output",
                         action="store_true")
     args = parser.parse_args()
-    if args.verbose: print args
     l = LEDClient(host=args.host,port=args.port,
                   nled=args.nled,pin=args.pin,max=args.max,
-                  stepsize=args.stepsize)
+                  stepsize=args.stepsize, verbose=args.verbose)
     l.off()
     try:
         while not args.off:
