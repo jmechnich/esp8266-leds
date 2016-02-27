@@ -72,8 +72,34 @@ class LEDClient(object):
                       (self.pin,self.nled*3))
 
 if __name__ == "__main__":
-    l = LEDClient(host="localhost",nled=120,pin=1,max=50)
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("host", default="localhost", type=str, nargs="?",
+                        help="mptt host (default: %(default)s)")
+    parser.add_argument("port", default=1883, type=int, nargs="?",
+                        help="mptt port (default: %(default)s)")
+    parser.add_argument("-m", "--max", default=50, type=int,
+                        help="maximum brightness (default: %(default)s)")
+    parser.add_argument("-n", "--nled", default=120, type=int,
+                        help="set number of leds (default: %(default)s)")
+    parser.add_argument("-o", "--off", action="store_true",
+                        help="set leds off and exit")
+    parser.add_argument("-p", "--pin", default=120, type=int,
+                        help="set led pin number (default: %(default)s)")
+    parser.add_argument("-s", "--stepsize", default=math.pi/1024., type=int,
+                        help="rainbow color stepsize (default: math.pi/1024)")
+    parser.add_argument("-v", "--verbose", help="verbose output",
+                        action="store_true")
+    args = parser.parse_args()
+    if args.verbose: print args
+    l = LEDClient(host=args.host,port=args.port,
+                  nled=args.nled,pin=args.pin,max=args.max,
+                  stepsize=args.stepsize)
     l.off()
-    while True:
-        l.iterate_rb_mirror()
-        time.sleep(1)
+    try:
+        while not args.off:
+            if args.verbose: print "iterate"
+            l.iterate_rb_mirror()
+            time.sleep(1)
+    except KeyboardInterrupt:
+        pass
