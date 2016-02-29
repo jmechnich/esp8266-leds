@@ -79,6 +79,10 @@ class LEDClient(object):
                       (self.pin,self.nled*3))
 
 if __name__ == "__main__":
+    effects = {
+        'rainbow':        lambda x: x.iterate_rb_full(),
+        'rainbow_mirror': lambda x: x.iterate_rb_mirror(),
+    }
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument("host", default="localhost", type=str, nargs="?",
@@ -89,6 +93,9 @@ if __name__ == "__main__":
                         help="set start color (hue), range 0-1 (default: %(default)s)")
     parser.add_argument("-d", "--device", default="huzzah", type=str,
                         help="device name (default: %(default)s)")
+    parser.add_argument("-e", "--effect", choices=sorted(effects.keys()),
+                        default="rainbow_mirror",
+                        help="select effect (default: %(default)s)")
     parser.add_argument("-m", "--max", default=50, type=int,
                         help="maximum brightness (default: %(default)s)")
     parser.add_argument("-n", "--nled", default=120, type=int,
@@ -109,7 +116,7 @@ if __name__ == "__main__":
                   hue=abs(args.color-int(args.color)))
     try:
         while not args.off:
-            l.iterate_rb_mirror()
+            effects[args.effect](l)
             time.sleep(args.time)
         else:
             l.off()
