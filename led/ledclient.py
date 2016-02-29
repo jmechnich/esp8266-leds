@@ -4,29 +4,35 @@ import subprocess, sys, time, math, colorsys
 
 class Rainbow(object):
     def __init__(self,nleds,max,stepsize=math.pi/256.,hue=0):
-        self.max      = max
-        self.nleds    = nleds
-        self.hsv      = [hue,1,1]
-        self.stepsize = stepsize
+        self.max      = int(max)
+        self.nleds    = int(nleds)
+        self.hue      = float(hue)
+        self.stepsize = float(stepsize)
+    
+    def stepHue(self):
+        self.hue += self.stepsize
+        while self.hue > 1: self.hue -= 1
+        while self.hue < 0: self.hue += 1
     
     def iterateLin(self):
-        return [ self.hsv[0]+i*self.stepsize for i in xrange(self.nleds) ]
+        return [ self.hue+i*self.stepsize for i in xrange(self.nleds) ]
     def iterateSin(self):
-        return [ abs(math.sin(self.hsv[0]+i*self.stepsize))
+        return [ abs(math.sin(self.hue+i*self.stepsize))
                  for i in xrange(self.nleds) ]
     def iterateSin2(self):
-        return [ math.pow(math.sin(self.hsv[0]+i*self.stepsize), 2)
+        return [ math.pow(math.sin(self.hue+i*self.stepsize), 2)
                  for i in xrange(self.nleds) ]
     def iterate(self):
         val = self.iterateLin()
-        self.hsv[0] += self.stepsize
-        while self.hsv[0]+self.nleds*self.stepsize > 1: self.hsv[0] -= 1
-        while self.hsv[0] < 0: self.hsv[0] += 1
+        self.stepHue()
         msg = []
         for i in val:
             msg += [ int(j*self.max)
-                     for j in colorsys.hsv_to_rgb(i, *(self.hsv[1:3]))]
+                     for j in colorsys.hsv_to_rgb(i, 1, 1,)]
         return msg
+    def iterate_single(self):
+        self.stepHue()
+        return (int(j*self.max) for j in colorsys.hsv_to_rgb(self.hue,1,1))
 
 class LEDClient(object):
     def __init__(self,nled,host,port=1883,pin=1,max=0xf,stepsize=math.pi/1024.,
@@ -41,10 +47,15 @@ class LEDClient(object):
         self.hue       = hue
         self.rb        = Rainbow(self.nled,self.max,stepsize=self.stepsize,
                                  hue=self.hue)
-
+    
+    def iterate_rb_blend(self):
+        r,g,b = self.rb.iterate_single()
+        self.send_cmd("ws2812.writergb(%d,string.char(%d,%d,%d):rep(%d))" % \
+                      (self.pin,r,g,b,self.nled))
+    
     def iterate_rb_full(self):
         self.send_raw(bytearray(self.rb.iterate()))
-
+    
     def iterate_rb_mirror(self):
         pix = self.rb.iterate()
         pix_half = pix[:len(pix)/2]
@@ -60,7 +71,7 @@ class LEDClient(object):
                 tmp = []
                 count = 0
         self.send_raw(bytearray(pix_half+pix_rev))
-        
+    
     def send_raw(self,data,topic="leddata",device="huzzah"):
         if self.verbose:
             print "Sending data to %s:%d, topic %s/in/%s, length %d" % \
@@ -70,44 +81,68 @@ class LEDClient(object):
         p = subprocess.Popen(cmdline.split(),stdin=subprocess.PIPE)
         p.communicate(data)
         p.wait()
-        
+    
     def send_cmd(self,cmd):
         return self.send_raw(cmd,topic="cmd")
-
+    
     def off(self):
         self.send_cmd("ws2812.writergb(%d,string.char(0):rep(%d))" % \
                       (self.pin,self.nled*3))
-
+    
 if __name__ == "__main__":
     effects = {
         'rainbow':        lambda x: x.iterate_rb_full(),
         'rainbow_mirror': lambda x: x.iterate_rb_mirror(),
+        'rainbow_blend':  lambda x: x.iterate_rb_blend(),
     }
+    
     import argparse
+    def arg_range(first,last,arg_type=int):
+        def f(string):
+            value = arg_type(string)
+            if value < first or value > last:
+                raise argparse.ArgumentTypeError(
+                    "value out of range: %s < value < %s" %
+                    (str(first),str(last)))
+            return value
+        return f
+    
+    def arg_positive(arg_type=int):
+        def f(string):
+            value = arg_type(string)
+            if value < 0:
+                raise argparse.ArgumentTypeError("value must be positive")
+            return value
+        return f
+    
     parser = argparse.ArgumentParser()
     parser.add_argument("host", default="localhost", type=str, nargs="?",
                         help="mptt host (default: %(default)s)")
     parser.add_argument("port", default=1883, type=int, nargs="?",
                         help="mptt port (default: %(default)s)")
-    parser.add_argument("-c", "--color", default=0, type=float,
-                        help="set start color (hue), range 0-1 (default: %(default)s)")
+    parser.add_argument("-c", "--color", default=0, type=arg_range(0,1,float),
+                        help="set start color (hue), range 0-1" \
+                        " (default: %(default)s)")
     parser.add_argument("-d", "--device", default="huzzah", type=str,
                         help="device name (default: %(default)s)")
     parser.add_argument("-e", "--effect", choices=sorted(effects.keys()),
                         default="rainbow_mirror",
                         help="select effect (default: %(default)s)")
-    parser.add_argument("-m", "--max", default=50, type=int,
-                        help="maximum brightness (default: %(default)s)")
-    parser.add_argument("-n", "--nled", default=120, type=int,
+    parser.add_argument("-m", "--max", default=50, type=arg_range(0,255),
+                        help="maximum brightness, range 0-255" \
+                        " (default: %(default)s)")
+    parser.add_argument("-n", "--nled", default=120, type=arg_positive,
                         help="set number of leds (default: %(default)s)")
     parser.add_argument("-o", "--off", action="store_true",
                         help="set leds off and exit")
     parser.add_argument("-p", "--pin", default=1, type=int,
                         help="set led pin number (default: %(default)s)")
-    parser.add_argument("-s", "--stepsize", default=math.pi/1024., type=float,
+    parser.add_argument("-s", "--stepsize", default=math.pi/1024.,
+                        type=arg_positive(float),
                         help="rainbow color stepsize (default: math.pi/1024)")
-    parser.add_argument("-t", "--time", default=1., type=float,
-                        help="time between changes (default: %(default)s)")
+    parser.add_argument("-t", "--time", default=1., type=arg_positive(float),
+                        help="time between changes in seconds" \
+                        " (default: %(default)s)")
     parser.add_argument("-v", "--verbose", help="verbose output",
                         action="store_true")
     args = parser.parse_args()
@@ -123,4 +158,3 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         pass
     print
-
