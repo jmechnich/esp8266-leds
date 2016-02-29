@@ -111,6 +111,8 @@ if __name__ == "__main__":
         while not args.off:
             l.iterate_rb_mirror()
             time.sleep(args.time)
+        else:
+            l.off()
     except KeyboardInterrupt:
         pass
     print
