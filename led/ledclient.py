@@ -2,12 +2,17 @@
 
 import subprocess, sys, time, math, colorsys
 
+def clamp(l):
+    return [ max(0,min(255,i)) for i in l ]
+
 class Rainbow(object):
     def __init__(self,nleds,max,stepsize=math.pi/256.,hue=0):
         self.max      = int(max)
         self.nleds    = int(nleds)
-        self.hue      = float(hue)
         self.stepsize = float(stepsize)
+        self.hue      = float(hue)
+        while self.hue > 1: self.hue -= 1
+        while self.hue < 0: self.hue += 1
     
     def stepHue(self):
         self.hue += self.stepsize
@@ -16,35 +21,40 @@ class Rainbow(object):
     
     def iterateLin(self):
         return [ self.hue+i*self.stepsize for i in xrange(self.nleds) ]
+    
     def iterateSin(self):
-        return [ abs(math.sin(self.hue+i*self.stepsize))
+        return [ (math.sin(self.hue+i*self.stepsize)*0.5)+1
                  for i in xrange(self.nleds) ]
+    
     def iterateSin2(self):
         return [ math.pow(math.sin(self.hue+i*self.stepsize), 2)
                  for i in xrange(self.nleds) ]
+    
     def iterate(self):
         val = self.iterateLin()
         self.stepHue()
         msg = []
         for i in val:
-            msg += [ int(j*self.max)
-                     for j in colorsys.hsv_to_rgb(i, 1, 1,)]
-        return msg
+            msg += [ int((j*self.max)+0.5)
+                     for j in colorsys.hsv_to_rgb(i, 1, 1,) ]
+        return clamp(msg)
+    
     def iterate_single(self):
         self.stepHue()
-        return (int(j*self.max) for j in colorsys.hsv_to_rgb(self.hue,1,1))
-
+        return clamp([ int((j*self.max)+0.5)
+                       for j in colorsys.hsv_to_rgb(self.hue,1,1) ])
+    
 class LEDClient(object):
     def __init__(self,nled,host,port=1883,pin=1,max=0xf,stepsize=math.pi/1024.,
                  verbose=False,hue=0):
-        self.nled      = nled
-        self.mqtt_host = host
-        self.mqtt_port = port
-        self.pin       = pin
-        self.max       = max
-        self.stepsize  = stepsize
-        self.verbose   = verbose
-        self.hue       = hue
+        self.nled      = int(nled)
+        self.mqtt_host = str(host)
+        self.mqtt_port = int(port)
+        self.pin       = int(pin)
+        self.max       = int(max)
+        self.stepsize  = float(stepsize)
+        self.verbose   = bool(verbose)
+        self.hue       = float(hue)
         self.rb        = Rainbow(self.nled,self.max,stepsize=self.stepsize,
                                  hue=self.hue)
     
