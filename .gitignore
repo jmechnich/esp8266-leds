@@ -2,3 +2,6 @@
 /.timestamp
 /.espuploadrc
 /local.lua
+/scripts/build
+/scripts/dist
+/scripts/*.egg-info

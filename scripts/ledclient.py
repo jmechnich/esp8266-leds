@@ -6,13 +6,14 @@ def clamp(l):
     return [ max(0,min(255,i)) for i in l ]
 
 class Rainbow(object):
-    def __init__(self,nleds,max,stepsize=math.pi/256.,hue=0):
+    def __init__(self,nleds,max,stepsize=math.pi/256.,hue=0,grb=False):
         self.max      = int(max)
         self.nleds    = int(nleds)
         self.stepsize = float(stepsize)
         self.hue      = float(hue)
         while self.hue > 1: self.hue -= 1
         while self.hue < 0: self.hue += 1
+        self.grb      = grb
     
     def stepHue(self):
         self.hue += self.stepsize
@@ -35,34 +36,57 @@ class Rainbow(object):
         self.stepHue()
         msg = []
         for i in val:
-            msg += [ int((j*self.max)+0.5)
-                     for j in colorsys.hsv_to_rgb(i, 1, 1,) ]
+            rgb = [ int((j*self.max)+0.5)
+                    for j in colorsys.hsv_to_rgb(i, 1, 1) ]
+            if self.grb:
+                msg += [ rgb[1], rgb[0], rgb[2] ]
+            else:
+                msg += [ rgb[1], rgb[0], rgb[2] ]
         return clamp(msg)
     
     def iterate_single(self):
         self.stepHue()
-        return clamp([ int((j*self.max)+0.5)
-                       for j in colorsys.hsv_to_rgb(self.hue,1,1) ])
+        rgb = [ int((j*self.max)+0.5)
+                for j in colorsys.hsv_to_rgb(self.hue,1,1) ]
+        if self.grb:
+            tmp = rgb[0]
+            rgb[0] = rgb[1]
+            rgb[1] = tmp
+        return clamp(rgb)
     
 class LEDClient(object):
     def __init__(self,nled,host,port=1883,pin=1,max=0xf,stepsize=math.pi/1024.,
-                 verbose=False,hue=0):
+                 verbose=False,hue=0,proto='mqtt'):
         self.nled      = int(nled)
-        self.mqtt_host = str(host)
-        self.mqtt_port = int(port)
+        self.host      = str(host)
+        self.port      = int(port)
         self.pin       = int(pin)
         self.max       = int(max)
         self.stepsize  = float(stepsize)
         self.verbose   = bool(verbose)
         self.hue       = float(hue)
+        self.proto     = str(proto)
+
+        grb = False
+        if self.proto != 'mqtt':
+            import socket
+            self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        else:
+            self.sock = None
+            grb = True
+
         self.rb        = Rainbow(self.nled,self.max,stepsize=self.stepsize,
-                                 hue=self.hue)
+                                 hue=self.hue,grb=grb)
+
     
     def iterate_rb_blend(self):
         r,g,b = self.rb.iterate_single()
-        self.send_cmd("ws2812.writergb(%d,string.char(%d,%d,%d):rep(%d))" % \
-                      (self.pin,r,g,b,self.nled))
-    
+        if self.proto == 'mqtt':
+            self.send_cmd("ws2812.writergb(%d,string.char(%d,%d,%d):rep(%d))" % \
+                          (self.pin,r,g,b,self.nled))
+        else:
+            self.send_raw(bytearray([r,g,b])*self.nled)
+            
     def iterate_rb_full(self):
         self.send_raw(bytearray(self.rb.iterate()))
     
@@ -82,23 +106,33 @@ class LEDClient(object):
                 count = 0
         self.send_raw(bytearray(pix_half+pix_rev))
     
-    def send_raw(self,data,topic="leddata",device="huzzah"):
+    def send_raw_mqtt(self,data,topic="leddata",device="huzzah"):
         if self.verbose:
             print "Sending data to %s:%d, topic %s/in/%s, length %d" % \
-                (self.mqtt_host,self.mqtt_port,device,topic,len(data))
+                (self.host,self.port,device,topic,len(data))
         cmdline = "mosquitto_pub -h %s -p %d -s -t %s/in/%s" % \
-                  (self.mqtt_host,self.mqtt_port,device,topic)
+                  (self.host,self.port,device,topic)
         p = subprocess.Popen(cmdline.split(),stdin=subprocess.PIPE)
         p.communicate(data)
         p.wait()
     
+    def send_raw(self,data,topic="leddata",device="huzzah"):
+        if self.proto == 'mqtt':
+            self.send_raw_mqtt(data,topic,device)
+        else:
+            if topic != "leddata": return
+            self.sock.sendto(bytearray('abc') + data,(self.host,self.port))
+            
     def send_cmd(self,cmd):
         return self.send_raw(cmd,topic="cmd")
     
     def off(self):
-        self.send_cmd("ws2812.writergb(%d,string.char(0):rep(%d))" % \
-                      (self.pin,self.nled*3))
-    
+        if self.proto == 'mqtt':
+            self.send_cmd("ws2812.writergb(%d,string.char(0):rep(%d))" % \
+                          (self.pin,self.nled*3))
+        else:
+            self.send_raw(bytearray(self.nled*3))
+            
 if __name__ == "__main__":
     effects = {
         'rainbow':        lambda x: x.iterate_rb_full(),
@@ -127,9 +161,9 @@ if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
     parser.add_argument("host", default="localhost", type=str, nargs="?",
-                        help="mptt host (default: %(default)s)")
+                        help="host (default: %(default)s)")
     parser.add_argument("port", default=1883, type=int, nargs="?",
-                        help="mptt port (default: %(default)s)")
+                        help="port (default: %(default)s)")
     parser.add_argument("-c", "--color", default=0, type=arg_range(0,1,float),
                         help="set start color (hue), range 0-1" \
                         " (default: %(default)s)")
@@ -141,12 +175,15 @@ if __name__ == "__main__":
     parser.add_argument("-m", "--max", default=50, type=arg_range(0,255),
                         help="maximum brightness, range 0-255" \
                         " (default: %(default)s)")
-    parser.add_argument("-n", "--nled", default=120, type=arg_positive,
+    parser.add_argument("-n", "--nled", default=120, type=arg_positive(),
                         help="set number of leds (default: %(default)s)")
     parser.add_argument("-o", "--off", action="store_true",
                         help="set leds off and exit")
     parser.add_argument("-p", "--pin", default=1, type=int,
                         help="set led pin number (default: %(default)s)")
+    parser.add_argument("-r", "--rtype", default="mqtt", type=str,
+                        choices=["mqtt","udp"],
+                        help="set remote host type")
     parser.add_argument("-s", "--stepsize", default=math.pi/1024.,
                         type=arg_positive(float),
                         help="rainbow color stepsize (default: math.pi/1024)")
@@ -158,7 +195,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     l = LEDClient(host=args.host,port=args.port,nled=args.nled,pin=args.pin,
                   max=args.max,stepsize=args.stepsize,verbose=args.verbose,
-                  hue=abs(args.color-int(args.color)))
+                  hue=abs(args.color-int(args.color)),proto=args.rtype)
     try:
         while not args.off:
             effects[args.effect](l)
