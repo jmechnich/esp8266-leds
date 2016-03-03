@@ -8,7 +8,8 @@ class LEDClient(object):
         self.pin       = int(args.pin)
         self.verbose   = bool(args.verbose)
         self.proto     = str(args.rtype)
-
+        self.grb       = bool(args.grb)
+        
         if self.proto != 'mqtt':
             import socket
             self.sock = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
@@ -26,10 +27,14 @@ class LEDClient(object):
         p.wait()
     
     def send_raw(self,data,topic="leddata",device="huzzah"):
+        if topic == "leddata" and self.grb:
+            pos=0
+            while pos < len(data):
+                data[pos],data[pos+1] = data[pos+1],data[pos]
+                pos+=3
         if self.proto == 'mqtt':
             self.send_raw_mqtt(data,topic,device)
         else:
-            if topic != "leddata": return
             self.sock.sendto(bytearray('abc') + data,(self.host,self.port))
             
     def send_cmd(self,cmd):

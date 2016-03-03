@@ -15,12 +15,8 @@ class RainbowMirror(Rainbow):
         for i in val:
             rgb = [ int((j*self.max)+0.5)
                     for j in colorsys.hsv_to_rgb(i, 1, 1) ]
-            if self.grb:
-                msg += [ rgb[1], rgb[0], rgb[2] ]
-                msg_mirror = [ rgb[1], rgb[0], rgb[2] ] + msg_mirror
-            else:
-                msg += [ rgb[0], rgb[1], rgb[2] ]
-                msg_mirror = [ rgb[0], rgb[1], rgb[2] ] + msg_mirror
+            msg += [ rgb[0], rgb[1], rgb[2] ]
+            msg_mirror = [ rgb[0], rgb[1], rgb[2] ] + msg_mirror
         return clamp(msg+msg_mirror)
     
 def create_parser():

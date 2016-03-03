@@ -1,4 +1,4 @@
-import math,colorsys
+import math, colorsys
 
 from esp8266leds.RainbowCommon import clamp, iterate_lin
 
@@ -8,7 +8,6 @@ class Rainbow(object):
         self.nled     = int(args.nled)
         self.stepsize = float(args.stepsize)
         self.hue      = float(args.color)
-        self.grb      = bool(args.grb)
         self.norm_hue()
     
     def step_hue(self):
@@ -24,12 +23,8 @@ class Rainbow(object):
         self.step_hue()
         msg = []
         for i in val:
-            rgb = [ int((j*self.max)+0.5)
-                    for j in colorsys.hsv_to_rgb(i, 1, 1) ]
-            if self.grb:
-                msg += [ rgb[1], rgb[0], rgb[2] ]
-            else:
-                msg += [ rgb[0], rgb[1], rgb[2] ]
+            msg += [ int((j*self.max)+0.5)
+                     for j in colorsys.hsv_to_rgb(i, 1, 1) ]
         return clamp(msg)
 
 def create_parser():

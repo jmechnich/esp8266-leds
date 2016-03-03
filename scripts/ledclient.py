@@ -6,12 +6,13 @@ from esp8266leds.Common    import arg_range, arg_positive
 from esp8266leds.LEDClient import LEDClient
 from esp8266leds           import Effect
 
-def read_configfile(fname=os.path.join( os.path.expanduser('~'),
-                                        '.esp8266leds')):
+def read_configfile(args):
     # Look for configuration file
     cmdargs = []
     try:
-        with open(fname) as f:
+        with open(args.config) as f:
+            if args.verbose:
+                print "Reading configuration from file '%s'" % args.config
             for line in f.readlines():
                 line = line.strip()
                 if len(line) == 0 or line.startswith('#'): continue
@@ -38,6 +39,11 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--color", default=0, type=arg_range(0,1,float),
                         help="set start color/hue, range 0-1" \
                         " (default: %(default)s)")
+    parser.add_argument("--config",
+                        default=os.path.join( os.path.expanduser('~'),
+                                              '.esp8266leds'),
+                        type=str, help="set config file path" \
+                        " (default: %(default)s)")
     parser.add_argument("-d", "--device", default="huzzah", type=str,
                         help="device name (default: %(default)s)")
     parser.add_argument("-e", "--effect", default="Rainbow", choices=effects,
@@ -60,7 +66,8 @@ if __name__ == "__main__":
                         action="store_true")
     parser.add_argument("--help", action="store_true")
 
-    args, unparsed_args = parser.parse_known_args(read_configfile())
+    args, unparsed_args = parser.parse_known_args()
+    args, unparsed_args = parser.parse_known_args(read_configfile(args))
     if args.effect:
         argparse.ArgumentParser(add_help=False)
         effect_module = Effect.load(args.effect)

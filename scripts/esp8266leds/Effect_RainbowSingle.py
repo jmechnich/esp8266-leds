@@ -11,10 +11,6 @@ class RainbowSingle(Rainbow):
         self.step_hue()
         rgb = [ int((j*self.max)+0.5)
                 for j in colorsys.hsv_to_rgb(self.hue,1,1) ]
-        if self.grb:
-            tmp = rgb[0]
-            rgb[0] = rgb[1]
-            rgb[1] = tmp
         return clamp(rgb*self.nled)
 
 def create_parser():
