@@ -8,6 +8,9 @@ setup(
     author='Joerg Mechnich',
     author_email='joerg.mechnich@gmail.com',
     license='MIT',
+    packages=[
+        'esp8266leds',
+    ],
     scripts=[
         'ledclient.py',
     ],
