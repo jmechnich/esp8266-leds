@@ -1,4 +1,5 @@
 *~
+*.pyc
 /.timestamp
 /.espuploadrc
 /local.lua
