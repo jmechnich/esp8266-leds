@@ -19,7 +19,6 @@ def create_parser():
     from esp8266leds.Common import arg_range, arg_positive
     parser = ArgumentParser(add_help=False, usage=SUPPRESS,
                             description="Effect options:")
-    from esp8266leds.Common import arg_range, arg_positive
     parser.add_argument("-m", "--max", default=50, type=arg_range(0,255),
                         help="maximum brightness, range 0-255" \
                         " (default: %(default)s)")

@@ -50,6 +50,8 @@ if __name__ == "__main__":
                         help="effect name (default: %(default)s)")
     parser.add_argument("-g", "--grb", action="store_true",
                         help="use GRB order")
+    parser.add_argument("--mirror", action="store_true",
+                        help="mirror effect at half of the strip")
     parser.add_argument("-n", "--nled", default=120, type=arg_positive(),
                         help="set number of leds (default: %(default)s)")
     parser.add_argument("-o", "--off", action="store_true",
@@ -92,6 +94,8 @@ if __name__ == "__main__":
         print
             
     l = LEDClient(args)
+    if args.mirror:
+        args.nled /= 2
     e = effect_module.instance(args)
     try:
         if args.off:
@@ -103,7 +107,12 @@ if __name__ == "__main__":
         if args.verbose:
             print "Starting effect '%s'" % args.effect
         while True:
-            l.send_raw(bytearray(e.iterate()))
+            data = e.iterate()
+            if args.mirror:
+                data = data + [ i for i in reversed(data) ]
+                for i in xrange(args.nled*3,6*args.nled,3):
+                    data[i], data[i+2] = data[i+2], data[i]
+            l.send_raw(bytearray(data))
             time.sleep(args.time)
             
     except KeyboardInterrupt:
