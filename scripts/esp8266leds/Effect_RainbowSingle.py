@@ -8,8 +8,8 @@ class RainbowSingle(Rainbow):
 
     def iterate(self):
         self.step_hue()
-        rgb = [self.hue,1,self.max/255.0]
-        cu.convert(rgb,[cu.toRGB ,cu.toByte])
+        rgb = [self.hue,1,self.max]
+        cu.convert(rgb,[cu.toRGB,cu.toNonLinear ,cu.toByte])
         return clamp(rgb*self.nled)
 
 def create_parser():
