@@ -34,12 +34,13 @@
 # Higher chance = more roaring fire.  Lower chance = more flickery fire.
 # Default 120, suggested range 50-200.
 
+from esp8266leds.Conversion     import convert, toUnit
+
 class Fire2012(object):
     def __init__(self,args):
         self.nled     = args.nled
         self.cooling  = args.cooling
         self.sparking = args.sparking
-        self.max      = args.max
         self.heat     = [0] * args.nled
 
     def iterate(self):
@@ -57,7 +58,8 @@ class Fire2012(object):
 
         leds = []
         for j in xrange(self.nled):
-            leds += [ (self.max*i)>>8 for i in HeatColor(self.heat[j]) ]
+            leds += [ (255*i)>>8 for i in HeatColor(self.heat[j]) ]
+        convert( leds, [toUnit] )
         return leds
 
 def HeatColor(temperature):
@@ -89,9 +91,6 @@ def create_parser():
     from esp8266leds.Common import arg_range, arg_positive
     parser = ArgumentParser(add_help=False, usage=SUPPRESS,
                             description="Effect options:")
-    parser.add_argument("-m", "--max", default=50, type=arg_range(0,255),
-                        help="maximum brightness, range 0-255" \
-                        " (default: %(default)s)")
     parser.add_argument("--cooling", default=55,
                         type=arg_range(20,100),
                         help="less cooling = taller flames (default: %(default)s)")
