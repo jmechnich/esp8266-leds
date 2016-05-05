@@ -1,6 +1,6 @@
 from esp8266leds.Effect_Rainbow import Rainbow
-from esp8266leds.RainbowCommon  import iterate_lin, clamp
-import esp8266leds.Conversion as cu
+from esp8266leds.RainbowCommon  import iterate_lin
+from esp8266leds.Conversion     import convert, toRGB
 
 class RainbowSingle(Rainbow):
     def __init__(self,args):
@@ -9,8 +9,8 @@ class RainbowSingle(Rainbow):
     def iterate(self):
         self.step_hue()
         rgb = [self.hue,1,self.max]
-        cu.convert(rgb,[cu.toRGB,cu.toNonLinear ,cu.toByte])
-        return clamp(rgb*self.nled)
+        convert(rgb,[toRGB])
+        return rgb*self.nled
 
 def create_parser():
     from esp8266leds.RainbowCommon import create_parser as cp

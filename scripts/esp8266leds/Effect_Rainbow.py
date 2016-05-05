@@ -1,7 +1,7 @@
 import math
 from itertools import chain
 
-from esp8266leds.RainbowCommon import clamp, iterate_lin
+from esp8266leds.RainbowCommon import iterate_lin
 import esp8266leds.Conversion as cu
 
 
@@ -25,8 +25,8 @@ class Rainbow(object):
         msg = iterate_lin(self.hue,self.stepsize,self.nled)
         msg = list(chain.from_iterable((hue, 1.0, self.max) for hue in msg))
         self.step_hue()
-        cu.convert(msg,[cu.toRGB,cu.toNonLinear ,cu.toByte])
-        return clamp(msg)
+        cu.convert(msg,[cu.toRGB])
+        return msg
 
 def create_parser():
     from esp8266leds.RainbowCommon import create_parser as cp

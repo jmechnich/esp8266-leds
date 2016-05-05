@@ -41,3 +41,8 @@ def toLinear(src):
 def toNonLinear(src):
 	g = gamma(2.2)
 	return g(src)
+
+def clamp(lower,upper):
+	def f(l):
+	    return [ max(lower,min(upper,i)) for i in l ]
+	return f

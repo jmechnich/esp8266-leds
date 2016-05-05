@@ -1,8 +1,5 @@
 import math
 
-def clamp(l):
-    return [ max(0,min(255,i)) for i in l ]
-
 def iterate_lin(hue,stepsize,n):
     return [ hue+i*stepsize for i in xrange(n) ]
 

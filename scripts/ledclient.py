@@ -2,9 +2,10 @@
 
 import math, time, argparse, sys, os
 
-from esp8266leds.Common    import arg_range, arg_positive
-from esp8266leds.LEDClient import LEDClient
-from esp8266leds           import Effect
+from esp8266leds.Common     import arg_range, arg_positive
+from esp8266leds.LEDClient  import LEDClient
+from esp8266leds            import Effect
+from esp8266leds.Conversion import convert, toNonLinear, toByte, clamp
 
 def read_configfile(args):
     # Look for configuration file
@@ -108,6 +109,7 @@ if __name__ == "__main__":
             print "Starting effect '%s'" % args.effect
         while True:
             data = e.iterate()
+            convert(data,[toNonLinear,toByte,clamp(0,255)])
             if args.mirror:
                 data = data + [ i for i in reversed(data) ]
                 for i in xrange(args.nled*3,6*args.nled,3):
