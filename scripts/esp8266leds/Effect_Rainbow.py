@@ -23,7 +23,7 @@ class Rainbow(object):
     
     def iterate(self):
         msg = iterate_lin(self.hue,self.stepsize,self.nled)
-        msg = list(chain.from_iterable((hue, 1.0, self.max) for hue in msg))
+        msg = list(chain.from_iterable((hue, 1.0, 1.0) for hue in msg))
         self.step_hue()
         cu.convert(msg,[cu.toRGB])
         return msg

@@ -8,7 +8,7 @@ class RainbowSingle(Rainbow):
 
     def iterate(self):
         self.step_hue()
-        rgb = [self.hue,1,self.max]
+        rgb = [self.hue,1,1]
         convert(rgb,[toRGB])
         return rgb*self.nled
 
