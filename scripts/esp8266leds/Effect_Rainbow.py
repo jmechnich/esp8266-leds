@@ -1,10 +1,13 @@
-import math, colorsys
+import math
+from itertools import chain
 
 from esp8266leds.RainbowCommon import clamp, iterate_lin
+import esp8266leds.Conversion as cu
+
 
 class Rainbow(object):
     def __init__(self,args):
-        self.max      = int(args.max)
+        self.max      = float(args.max)
         self.nled     = int(args.nled)
         self.stepsize = float(args.stepsize)
         self.hue      = float(args.color)
@@ -19,12 +22,10 @@ class Rainbow(object):
         while self.hue < 0: self.hue += 1
     
     def iterate(self):
-        val = iterate_lin(self.hue,self.stepsize,self.nled)
+        msg = iterate_lin(self.hue,self.stepsize,self.nled)
+        msg = list(chain.from_iterable((hue, 1.0, self.max/255.0) for hue in msg))
         self.step_hue()
-        msg = []
-        for i in val:
-            msg += [ int((j*self.max)+0.5)
-                     for j in colorsys.hsv_to_rgb(i, 1, 1) ]
+        cu.convert(msg,[cu.toRGB ,cu.toByte])
         return clamp(msg)
 
 def create_parser():

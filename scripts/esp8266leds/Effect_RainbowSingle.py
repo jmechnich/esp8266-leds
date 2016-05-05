@@ -1,7 +1,6 @@
 from esp8266leds.Effect_Rainbow import Rainbow
 from esp8266leds.RainbowCommon  import iterate_lin, clamp
-
-import colorsys
+import esp8266leds.Conversion as cu
 
 class RainbowSingle(Rainbow):
     def __init__(self,args):
@@ -9,8 +8,8 @@ class RainbowSingle(Rainbow):
 
     def iterate(self):
         self.step_hue()
-        rgb = [ int((j*self.max)+0.5)
-                for j in colorsys.hsv_to_rgb(self.hue,1,1) ]
+        rgb = [self.hue,1,self.max/255.0]
+        cu.convert(rgb,[cu.toRGB ,cu.toByte])
         return clamp(rgb*self.nled)
 
 def create_parser():
