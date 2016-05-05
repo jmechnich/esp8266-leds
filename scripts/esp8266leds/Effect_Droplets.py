@@ -1,4 +1,5 @@
 import numpy, random, scipy.signal, colorsys
+from esp8266leds.Conversion     import convert, toUnit
 
 class Droplet(object):
     def __init__(self,args):
@@ -15,7 +16,7 @@ class Droplet(object):
         
     def fade(self):
         v = float(self.iteration) / self.time_to_live
-        scaling = 0.5 - abs(v - 0.5)
+        scaling = (0.5 - abs(v - 0.5))*2.0
         
         if not self.valid:
             scaling = 0
@@ -75,8 +76,8 @@ class Droplets(object):
 
         for idx in sorted(garbage, reverse=True):
             self.droplets.pop(idx)
-            
-        msg = [abs(min(c, 255)) for c in colors]
+        msg = list(colors) 
+        convert(msg,[toUnit])   
         return msg
 
 def create_parser():
