@@ -46,3 +46,6 @@ def clamp(lower,upper):
 	def f(l):
 	    return [ max(lower,min(upper,i)) for i in l ]
 	return f
+
+def rgb2bgr(src):
+	return reversed(src)

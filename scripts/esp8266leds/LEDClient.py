@@ -1,5 +1,5 @@
 import math,subprocess
-
+from esp8266leds.Conversion     import convert, rgb2bgr
 class LEDClient(object):
     def __init__(self,args):
         self.nled      = int(args.nled)
@@ -9,6 +9,7 @@ class LEDClient(object):
         self.verbose   = bool(args.verbose)
         self.proto     = str(args.rtype)
         self.grb       = bool(args.grb)
+        self.mirror    = bool(args.mirror)
         
         if self.proto != 'mqtt':
             import socket
@@ -36,6 +37,14 @@ class LEDClient(object):
             self.send_raw_mqtt(data,topic,device)
         else:
             self.sock.sendto(bytearray('abc') + data,(self.host,self.port))
+
+    def send(self,data,topic="leddata",device="huzzah"):
+        if self.mirror:
+            mirrored = [ i for i in reversed(data) ]
+            convert(mirrored,[rgb2bgr])
+            data += mirrored
+        self.send_raw(bytearray(data),topic,device)
+
             
     def send_cmd(self,cmd):
         return self.send_raw(cmd,topic="cmd")

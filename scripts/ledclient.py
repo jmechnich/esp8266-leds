@@ -116,11 +116,7 @@ if __name__ == "__main__":
         while True:
             data = e.iterate()
             convert(data,[toHSV, multiply((1,1,args.max)), toRGB, gamma(args.gamma),toByte,clamp(0,255)])
-            if args.mirror:
-                data = data + [ i for i in reversed(data) ]
-                for i in xrange(args.nled*3,6*args.nled,3):
-                    data[i], data[i+2] = data[i+2], data[i]
-            l.send_raw(bytearray(data))
+            l.send(data)
             time.sleep(args.time)
             
     except KeyboardInterrupt:
