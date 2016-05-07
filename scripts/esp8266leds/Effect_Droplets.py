@@ -1,5 +1,4 @@
-import numpy, random, scipy.signal, colorsys
-from esp8266leds.Conversion     import convert, toUnit
+import random, scipy.signal, colorsys
 
 class Droplet(object):
     def __init__(self,args):
@@ -10,8 +9,7 @@ class Droplet(object):
         self.time_to_live = random.randint(80, 150)
         self.speed = random.random() / 80
         self.valid = True
-        self.values = scipy.signal.gaussian(self.radius * 2 + 1,
-                                            self.radius / 2.0)
+        self.values = list(scipy.signal.gaussian(self.radius * 2 + 1, self.radius / 2.0))
         self.iteration = 0
         
     def fade(self):
@@ -21,7 +19,7 @@ class Droplet(object):
         if not self.valid:
             scaling = 0
             
-        values = self.values * scaling
+        values = [x * scaling for x in self.values]
         
         self.center = (self.center + self.speed) % 1
         
@@ -46,7 +44,7 @@ class Droplets(object):
 
     def iterate(self):
 
-        colors = numpy.array([0, 0, 0] * self.nled)
+        colors = [0, 0, 0] * self.nled
 
         if len(self.droplets) < self.max and \
            random.random() < self.probability:
@@ -60,24 +58,21 @@ class Droplets(object):
             values = droplet.fade()
             pos = droplet.begin()
             if pos < 0:
-                values = numpy.copy(values[abs(pos):])
+                values = values[abs(pos):]
                 pos = 0
             if droplet.end() > self.nled:
-                values = numpy.copy(values[:-(droplet.end() - self.nled)])
-
-            if numpy.empty(values):
-                continue
+                values = values[:-(droplet.end() - self.nled)]
 
             for i, val in enumerate(values):
-                rgb = (numpy.array(colorsys.hsv_to_rgb(droplet.hue, 1, val)
-                )**2.2 * 255).round().astype(int)
+                rgb = colorsys.hsv_to_rgb(droplet.hue, 1, val)
                 idx = (pos + i) * 3
-                colors[idx:idx + 3] += rgb
+                colors[idx  ] += rgb[0]
+                colors[idx+1] += rgb[1]
+                colors[idx+2] += rgb[2]
 
         for idx in sorted(garbage, reverse=True):
             self.droplets.pop(idx)
         msg = list(colors) 
-        convert(msg,[toUnit])   
         return msg
 
 def create_parser():
