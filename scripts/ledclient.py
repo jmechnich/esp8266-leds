@@ -7,28 +7,27 @@ from esp8266leds.LEDClient  import LEDClient
 from esp8266leds            import Effect
 from esp8266leds.Conversion import convert, gamma, toByte, clamp, toHSV, toRGB, multiply
 
-def read_configfile(args):
-    # Look for configuration file
+def read_configfile(filename,verbose=False):
     cmdargs = []
-    try:
-        with open(args.config) as f:
-            if args.verbose:
-                print "Reading configuration from file '%s'" % args.config
-            for line in f.readlines():
-                line = line.strip()
-                if len(line) == 0 or line.startswith('#'): continue
-                arg = [ a.strip() for a in line.split('=') ]
-                if len(arg) != 2:
-                    print "Error parsing command line argument from configfile:", line
-                    continue
-                cmdargs.append('--' + arg[0])
-                cmdargs.append(arg[1])
-    except IOError, e:
-        pass
-    cmdargs += sys.argv[1:]
+    if not os.path.exists(filename):
+        if verbose:
+            print "Could not open configfile '%s', skipping" % filename
+        return cmdargs
+    
+    if verbose:
+        print "Reading configuration from file '%s'" % filename
+
+    with open(filename) as f:
+        for line in f.readlines():
+            line = line.strip()
+            if len(line) == 0 or line.startswith('#'): continue
+            arg = [ a.strip() for a in line.split('=') ]
+            cmdargs.append('--' + arg[0])
+            cmdargs.append(arg[1])
     return cmdargs
 
 if __name__ == "__main__":
+    progname = os.path.splitext(os.path.basename(sys.argv[0]))[0]
     effects = Effect.list_all()
     parser = argparse.ArgumentParser(add_help=False)
 
@@ -41,10 +40,7 @@ if __name__ == "__main__":
                         help="set start color/hue, range 0-1" \
                         " (default: %(default)s)")
     parser.add_argument("--config",
-                        default=os.path.join( os.path.expanduser('~'),
-                                              '.esp8266leds'),
-                        type=str, help="set config file path" \
-                        " (default: %(default)s)")
+                        type=str, help="set config file path")
     parser.add_argument("-d", "--device", default="huzzah", type=str,
                         help="device name (default: %(default)s)")
     parser.add_argument("-e", "--effect", default="Rainbow", choices=effects,
@@ -55,8 +51,10 @@ if __name__ == "__main__":
                         help="mirror effect at half of the strip")
     parser.add_argument("-n", "--nled", default=120, type=arg_positive(),
                         help="set number of leds (default: %(default)s)")
-    parser.add_argument("-o", "--off", action="store_true",
-                        help="set leds off and exit")
+    parser.add_argument("-o", "--off", default=None, const=True, nargs='?',
+                        type=bool, help="set leds off and exit")
+    parser.add_argument("--offatexit", default=None, const=True, nargs='?',
+                        type=bool, help="set leds off at exit")
     parser.add_argument("--pin", default=1, type=int,
                         help="set led pin number (default: %(default)s)")
     parser.add_argument("-r", "--rtype", default="mqtt", type=str,
@@ -71,12 +69,22 @@ if __name__ == "__main__":
     parser.add_argument("-t", "--time", default=1., type=arg_positive(float),
                         help="time between changes in seconds" \
                         " (default: %(default)s)")
-    parser.add_argument("-v", "--verbose", help="verbose output",
-                        action="store_true")
+    parser.add_argument("-v", "--verbose", default=None, const=True, nargs='?',
+                        type=bool, help="verbose output")
     parser.add_argument("--help", action="store_true")
 
+    
     args, unparsed_args = parser.parse_known_args()
-    args, unparsed_args = parser.parse_known_args(read_configfile(args))
+    if args.config:
+        cmdargs = read_configfile(args.config,verbose=args.verbose)
+    else:
+        cmdargs = read_configfile('/etc/%s.conf' % progname, verbose=args.verbose)
+        cmdargs += read_configfile(os.path.join(os.path.expanduser("~"),'.%s.conf' % progname),verbose=args.verbose)
+
+    #print cmdargs, sys.argv[1:]
+    args, unparsed_args = parser.parse_known_args(cmdargs + sys.argv[1:])
+    #print args, unparsed_args
+    
     if args.effect:
         argparse.ArgumentParser(add_help=False)
         effect_module = Effect.load(args.effect)
@@ -86,7 +94,9 @@ if __name__ == "__main__":
         if args.verbose and len(unparsed_effect_args):
             print "Ignoring arguments", unparsed_effect_args
         args.__dict__.update(vars(effect_args))
-    
+    elif args.verbose and len(unparsed_args):
+        print "Ignoring arguments", unparsed_args
+        
     if args.help:
         parser.print_help()
         if args.effect:
@@ -121,4 +131,6 @@ if __name__ == "__main__":
             
     except KeyboardInterrupt:
         pass
-    print
+
+    if args.offatexit:
+        l.off()
